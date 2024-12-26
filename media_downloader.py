@@ -139,7 +139,6 @@ async def _get_media_meta(
         # pylint: disable = C0209
         file_format = media_obj.mime_type.split("/")[-1]  # type: ignore
         file_name: str = os.path.join(
-            THIS_DIR,
             chat_name,
             _type,
             "{}_{}.{}".format(
@@ -149,12 +148,7 @@ async def _get_media_meta(
             ),
         )
     else:
-        file_name = os.path.join(
-            THIS_DIR,
-            chat_name,
-            _type,
-            getattr(media_obj, "file_name", None) or "",
-        )
+        file_name = os.path.join(_type, getattr(media_obj, "file_name", None) or "")
     return file_name, file_format
 
 
@@ -163,6 +157,7 @@ async def download_media(
     message: pyrogram.types.Message,
     media_types: List[str],
     file_formats: dict,
+    upload_dir: str = THIS_DIR,
     chat_name: str,
     chat_id: int,
 ):
@@ -283,6 +278,8 @@ async def process_messages(
     file_formats: dict,
     chat_name: str,
     chat_id: int,
+    upload_dir: str,
+
 ) -> int:
     """
     Download media from Telegram.
@@ -319,9 +316,8 @@ async def process_messages(
     """
     message_ids = await asyncio.gather(
         *[
-            download_media(
-                client, message, media_types, file_formats, chat_name, chat_id
-            )
+            download_media(client, message, media_types, file_formats, upload_dir=upload_dir)
+
             for message in messages
         ]
     )
@@ -406,6 +402,7 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
             for message in skipped_messages:
                 pagination_count += 1
                 messages_list.append(message)
+        upload_dir: str = config.get("upload_dir", THIS_DIR)
 
         async for message in messages_iter:  # type: ignore
             if pagination_count != pagination_limit:
@@ -419,6 +416,8 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
                     config["file_formats"],
                     chat_name,
                     chat_id,
+                    upload_dir,
+
                 )
                 pagination_count = 0
                 messages_list = []
@@ -435,6 +434,8 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
                 config["file_formats"],
                 chat_name,
                 chat_id,
+                upload_dir,
+
             )
 
         config["chats"][chat_index][
