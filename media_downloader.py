@@ -360,6 +360,20 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
         api_hash=config["api_hash"],
     )
     await client.start()
+    last_read_message_id: int = config["last_read_message_id"]
+    messages_iter = client.get_chat_history(
+        config["chat_id"], offset_id=last_read_message_id
+    )
+    messages_list: list = []
+    pagination_count: int = 0
+    if config["ids_to_retry"]:
+        logger.info("Downloading files failed during last run...")
+        skipped_messages: list = await client.get_messages(  # type: ignore
+            chat_id=config["chat_id"], message_ids=config["ids_to_retry"]
+        )
+        for message in skipped_messages:
+            pagination_count += 1
+            messages_list.append(message)
 
     for chat_index in range(len(config["chats"])):
         chat_id = config["chats"][chat_index]["id"]

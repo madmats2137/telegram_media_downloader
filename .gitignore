@@ -12,6 +12,8 @@ settings.json
 
 # Distribution / packaging
 .Python
+.vscode/
+
 .pytest_cache
 .python-version
 env/
